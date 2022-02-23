@@ -20,6 +20,7 @@ scale-info = { version = "1.0", default-features = false, features = ["derive"] 
 frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", tag = "devhub/latest"}
 frame-system = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", tag = "devhub/latest" }
 frame-benchmarking = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", tag = "devhub/latest", optional = true }
+pallet-identity = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", tag = "devhub/latest" }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", tag = "devhub/latest" }
@@ -30,6 +31,7 @@ sp-runtime = { default-features = false, version = "4.0.0-dev", git = "https://g
 default = ["std"]
 std = [
 	"codec/std",
+	"pallet-identity/std",
 	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
