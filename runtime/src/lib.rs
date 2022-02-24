@@ -45,8 +45,7 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-/// Import the template pallet.
-pub use pallet_template;
+pub use pallet_identity_extension;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -280,9 +279,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 /// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
-	// type Event = Event;
-}
+impl pallet_identity_extension::Config for Runtime {}
 
 parameter_types! {
 	// Minimum 100 bytes/KSM deposited (1 CENT/byte)
@@ -294,12 +291,6 @@ parameter_types! {
 	pub const MaxRegistrars: u32 = 20;
 }
 
-use frame_support::traits::{Currency, OnUnbalanced};
-
-type NegativeImbalanceOf<T> = <<T as pallet_identity::Config>::Currency as Currency<
-	<T as frame_system::Config>::AccountId,
->>::NegativeImbalance;
-
 impl pallet_identity::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
@@ -309,7 +300,7 @@ impl pallet_identity::Config for Runtime {
 	type MaxSubAccounts = MaxSubAccounts;
 	type MaxAdditionalFields = MaxAdditionalFields;
 	type MaxRegistrars = MaxRegistrars;
-	type Slashed = dyn OnUnbalanced<NegativeImbalanceOf<Self>>;
+	type Slashed = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type RegistrarOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = ();
@@ -330,8 +321,17 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template,
+
+		// Rather than a true "extension", it is just a second pallet that "wraps" the Identity pallet, and users
+		// can still call the identity pallet directly.
+
+		// I don't think there is a way to override-to-disable functionality on the prebuilt pallets, so all extended logic
+		// needs to be compatible with the prebuilt pallet, but perhaps?
+		// In other words, is there a way to stay on the paritytech/substrate codebase while configuring a specific
+		// chain to enforce "set_identity" to occur on the extension pallet. This would be more polymorphic but not
+		// sure if Rust supports this.
+		Identity: pallet_identity,
+		IdentityExtension: pallet_identity_extension,
 	}
 );
 

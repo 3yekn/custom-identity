@@ -1,3 +1,121 @@
+# Extending Prebuilt Pallets
+### Am I wrong?
+If there is a better way to do this, please open an issue or make a PR. I think the principles are accurate but there may be an easier rust way to achieve this.
+## Background
+While building blockchains using Substrate, I think it is important to re-use the prebuilt pallets developed by Parity as much as possible. These pallets are regularly maintained and improved by Parity. 
+
+For example, the [identity pallet](https://github.com/paritytech/substrate/commits/master/frame/identity/src), as of this writing, has about one commit per week to `master`, and major recent changes in the referendum and conviction voting policies on Polkadot have led to significant development work by Parity on the respective pallets.
+
+Of course, as chains decentralize and customize themselves via Runtime upgrades, the code will naturally diverge. But in the meantime, the benefits of compatibility likely outweigh the downsides.
+
+## Benefits
+- Chain/project continually receives extra features without having to build everything.
+- Adopting the logic also includes the end-user documentation that will never be written otherwise.
+- Existing open source tooling remains compatible, such as block explorers and other clients.
+- All other benefits of code modularization, cohesion, coupling, etc.
+
+## Downsides
+- Trade-offs associated with being less custom typically impact usability. For example, the standard Identity pallet has a field for `Riot Handle`, and perhaps your community uses `Telegram`. Instead of forking the Identity pallet to rename the field `Telegram`, staying compatible means that this data may need to go into the `additional` fields area and your UI will always know to render it as a `Telegram` handle.
+- Others?
+
+## Example
+In this repo, I've created a new pallet, [`identity-extension`](pallets/identity-extension/), that is tightly coupled to the `identity` pallet. There is a custom `set_identity` extrinsic like below. All it does is append an element to the `additional` fields area and call the `identity` pallet's `set_identity` extrinsic.
+
+```rust
+pub fn set_identity(
+			origin: OriginFor<T>,
+			info: Box<pallet_identity::IdentityInfo<T::MaxAdditionalFields>>,
+		) -> DispatchResultWithPostInfo {
+			let mut info = info;
+
+			info.additional
+				.try_push((
+					pallet_identity::Data::Raw(b"created_by".to_vec().try_into().unwrap()),
+					pallet_identity::Data::Raw(b"identity_extension".to_vec().try_into().unwrap()),
+				))
+				.unwrap();
+
+			pallet_identity::Pallet::<T>::set_identity(origin, info)
+		}
+```
+
+The code of the identity pallet is not in this project. It is a dependency that will refresh like any other dependency, thus including any new functionality as they are released. If there is a breaking change that impacts how it is being used, the extension pallet will obviously need to be updated.
+### Call the Extension
+```bash
+polkadot-js-api --ws ws://127.0.0.1:45533 tx.identityExtension.setIdentity '{
+    "display": {
+        "Raw": "Steve Harvey"
+    },
+    "web": {
+        "Raw": "https://steveharvey.com"
+    },
+    "riot": {
+        "Raw": "@surveysays:matrix.org"
+    },
+    "email": {
+        "Raw": "notrealsteve@email.com"
+    }, 
+    "additional": [[{
+            "Raw": "Favorite Number"
+        },{
+            "Raw": "42"
+          }
+        ]
+    ]
+}' --seed "//Bob"
+```
+
+Then check the identity.
+```bash
+polkadot-js-api --ws ws://127.0.0.1:45533 query.identity.identityOf 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty
+```
+
+The extra `created_by` field is added to the `additional` vector, which was added by our extension.
+```json
+{
+  "identityOf": {
+    "judgements": [],
+    "deposit": "49,999,999,500",
+    "info": {
+      "additional": [
+        [
+          {
+            "Raw": "Favorite Number"
+          },
+          {
+            "Raw": "42"
+          }
+        ],
+        [
+          {
+            "Raw": "created_by"
+          },
+          {
+            "Raw": "identity_extension"
+          }
+        ]
+      ],
+      "display": {
+        "Raw": "Steve Harvey"
+      },
+      "legal": "None",
+      "web": {
+        "Raw": "https://steveharvey.com"
+      },
+      "riot": {
+        "Raw": "@surveysays:matrix.org"
+      },
+      "email": {
+        "Raw": "notrealsteve@email.com"
+      },
+      "pgpFingerprint": null,
+      "image": "None",
+      "twitter": "None"
+    }
+  }
+}
+```
+
 # Substrate Node Template
 
 [![Try on playground](https://img.shields.io/badge/Playground-Node_Template-brightgreen?logo=Parity%20Substrate)](https://docs.substrate.io/playground/) [![Matrix](https://img.shields.io/matrix/substrate-technical:matrix.org)](https://matrix.to/#/#substrate-technical:matrix.org)
