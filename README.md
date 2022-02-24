@@ -1,5 +1,5 @@
 # Extending Prebuilt Pallets
-### Am I wrong?
+### Is there a better way? 
 If there is a better way to do this, please open an issue or make a PR. I think the principles are accurate but there may be an easier rust way to achieve this.
 ## Background
 While building blockchains using Substrate, I think it is important to re-use the prebuilt pallets developed by Parity as much as possible. These pallets are regularly maintained and improved by Parity. 
@@ -23,20 +23,20 @@ In this repo, I've created a new pallet, [`identity-extension`](pallets/identity
 
 ```rust
 pub fn set_identity(
-			origin: OriginFor<T>,
-			info: Box<pallet_identity::IdentityInfo<T::MaxAdditionalFields>>,
-		) -> DispatchResultWithPostInfo {
-			let mut info = info;
+  origin: OriginFor<T>,
+  info: Box<pallet_identity::IdentityInfo<T::MaxAdditionalFields>>,
+) -> DispatchResultWithPostInfo {
+  let mut info = info;
 
-			info.additional
-				.try_push((
-					pallet_identity::Data::Raw(b"created_by".to_vec().try_into().unwrap()),
-					pallet_identity::Data::Raw(b"identity_extension".to_vec().try_into().unwrap()),
-				))
-				.unwrap();
+  info.additional
+    .try_push((
+      pallet_identity::Data::Raw(b"created_by".to_vec().try_into().unwrap()),
+      pallet_identity::Data::Raw(b"identity_extension".to_vec().try_into().unwrap()),
+    ))
+    .unwrap();
 
-			pallet_identity::Pallet::<T>::set_identity(origin, info)
-		}
+  pallet_identity::Pallet::<T>::set_identity(origin, info)
+}
 ```
 
 The code of the identity pallet is not in this project. It is a dependency that will refresh like any other dependency, thus including any new functionality as they are released. If there is a breaking change that impacts how it is being used, the extension pallet will obviously need to be updated.
